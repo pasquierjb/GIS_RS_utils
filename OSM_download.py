@@ -1,4 +1,4 @@
-# example : python OSM_download.py --amenity "school" --lon 9.173196 --lat 45.478062
+# example : python OSM_download.py --amenity "school" --lon 9.173196 --lat 45.478062 --dist 100
 
 import click
 from shapely.geometry import Polygon, mapping, Point
@@ -7,9 +7,9 @@ import numpy as np
 
 class OSM_downloader:
     """
-    give you the coordinates of the amenities from OSM. use:
+    returns the number of amenities from OSM in the given range. use:
     OSM = OSM_downloader(lat, lon, dist)
-    schools = OSM.query_osm(amenity='school')
+    points = OSM.query_osm('school')
     """
     def __init__(self, lat, lon, dist):
 
@@ -23,33 +23,26 @@ class OSM_downloader:
                  '('
                  'node["amenity"="{amenity:}"]({south:.8f},{west:.8f},{north:.8f},{east:.8f});'
                  'way["amenity"="{amenity:}"]({south:.8f},{west:.8f},{north:.8f},{east:.8f});'
-                 ');(._;>;);out center;').format(amenity=amenity, north=self.north, south=self.south, east=self.east, west=self.west)
+                 ');out count;').format(amenity=amenity, north=self.north, south=self.south, east=self.east, west=self.west)
 
         response = core.overpass_request(data={'data': query}, timeout=600, error_pause_duration=None)
-        print(response)
-        l = []
-        for result in response['elements']:
-            if result['type'] == 'node': l.append((result['lat'], result['lon']))
+        
+        if response['elements'][0]['type'] == 'count':
 
-            # elif result['type'] == 'way':
-            #     nodes = [l[id] for id in result['nodes']]
-            #     x_l, y_l = [], [] 
-            #     [(x_l.append(x[0]), y_l.append(x[1])) for x in nodes]
-            #     print(np.mean(x_l), np.mean(y_l))
-        return l
+            return response['elements'][0]['tags']['total']
 
 
 @click.command()
 @click.option('--amenity', default="school")
-@click.option('--lat', type=float)
-@click.option('--lon', type=float)
+@click.option('--lat', default=45.479012, type=float)
+@click.option('--lon', default=9.169201, type=float)
 @click.option('--dist', default=500)
 def OSM_scraper(amenity, lat, lon, dist):
 
     OSM = OSM_downloader(lat, lon, dist)
     points = OSM.query_osm(amenity)
 
-    print(points)
+    print('number of {}: {}'.format(amenity, points))
 
 
 if __name__ == '__main__':
